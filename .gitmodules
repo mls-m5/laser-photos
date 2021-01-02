@@ -1,0 +1,3 @@
+[submodule "lib/msl"]
+	path = lib/msl
+	url = https://github.com/mls-m5/msl
