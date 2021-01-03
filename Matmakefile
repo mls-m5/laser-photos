@@ -11,15 +11,29 @@ config += modules
 config += c++17 Wall
 debug: config += debug      # Flags only used in "debug" confinguration
 
-main.includes +=
+debug: flags += -O0
+
+includes +=
     include
     lib/msl/include
+    lib/fmt/include
+    lib/json.h/include
+    src/
 
 main.src =
     src/*.cpp
     src/*.cppm
+    lib/fmt/src/*.cc
 
-main.dir = bin
+dir = bin
 
+
+#==============================================
+
+src = test/%.cpp
+
+includes += test
+
+date_test.out = test %
 
 

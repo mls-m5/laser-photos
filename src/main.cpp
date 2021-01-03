@@ -1,16 +1,21 @@
 
 #include "files/filesystem.h"
 #include "files/popenstream.h"
+#include "fmt/core.h"
 #include "hash.h"
+#include "html/html.h"
+#include "image/metadata.h"
 #include "jpeglib.h"
-#include <filesystem>
-#include <fstream>
-#include <iostream>
+
+namespace {
 
 void index() {
     auto root = filesystem::current_path();
 
-    for (const auto &it : filesystem::recursive_directory_iterator(root)) {
+    //    auto inputDir = root / "input";
+    auto inputDir = filesystem::path{"input"};
+
+    for (const auto &it : filesystem::recursive_directory_iterator(inputDir)) {
         if (filesystem::is_directory(it.path())) {
             continue;
         }
@@ -28,12 +33,113 @@ void index() {
         POpenStream stream{"identify -format '%[EXIF:*]' " +
                            it.path().string()};
 
-        std::cout << stream.rdbuf();
+        auto thumbPath = filesystem::path{"thumbs"} / (hash + ".jpg");
+
+        // see
+        // https://www.cyberciti.biz/tips/howto-linux-creating-a-image-thumbnails-from-shell-prompt.html
+        system((std::string{"convert -auto-orient -thumbnail x200 '"} +
+                it.path().string() + "' '" + thumbPath.string() + "'")
+                   .c_str());
+
+        auto metaData = MetaData{stream,
+                                 it.path(),
+                                 filesystem::path{"data"} / (hash + ".json"),
+                                 thumbPath};
+
+        metaData.save();
     }
 }
 
-int main(int /*argc*/, char ** /*argv*/) {
-    index();
+filesystem::path generate() {
+    //    auto root = filesystem::current_path();
+    //    auto dataDir = root / "data";
+    auto dataDir = "data";
+
+    std::vector<MetaData> metaData;
+
+    metaData.reserve(10000);
+
+    for (const auto &it : filesystem::recursive_directory_iterator{dataDir}) {
+        if (it.path().extension() != ".json") {
+            continue;
+        }
+
+        metaData.emplace_back(it.path());
+    }
+
+    auto images = Html{"div"};
+
+    images.children().reserve(metaData.size());
+
+    for (const auto &meta : metaData) {
+        fmt::print("{}\n", meta.imgPath.string());
+
+        images.children().push_back({
+            "a",
+            {{"img",
+              {},
+              {
+                  {"src", meta.thumbPath},
+                  {"title", meta.dateString()},
+              }}},
+            {{"href", meta.imgPath.string()}},
+        });
+    }
+
+    auto html = Html{
+        "html",
+        {
+            {
+                "head",
+                {
+                    {"meta", {}, {{"charset", "utf-8"}}},
+                },
+            },
+            images,
+        },
+    };
+
+    html.print(std::cout);
+
+    auto filename = filesystem::path{"index.html"};
+
+    std::ofstream file{filename};
+
+    if (!file.is_open()) {
+        throw std::runtime_error{"could not open output file " +
+                                 filesystem::absolute(filename).string()};
+    }
+
+    html.print(file);
+
+    return filename;
+}
+
+const std::string helpString = R"_(
+index              index the image folder
+generate           generate
+
+)_";
+
+} // namespace
+
+int main(int argc, char **argv) {
+    std::vector<std::string> args{argv + 1, argv + argc};
+
+    if (args.size() < 1) {
+        std::cerr << "no arguments\n";
+        std::cerr << helpString << "\n";
+        return 0;
+    }
+
+    if (args[0] == "index") {
+        index();
+    }
+    else if (args[0] == "generate") {
+        auto path = generate();
+
+        system(("xdg-open " + path.string()).c_str());
+    }
 
     return 0;
 }
