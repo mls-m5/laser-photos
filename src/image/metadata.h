@@ -7,7 +7,9 @@
 #include <map>
 #include <string>
 
-std::chrono::system_clock::time_point parseTime(std::string str) {
+using ClockT = std::chrono::system_clock;
+
+ClockT::time_point parseTime(std::string str) {
     std::tm tm = {};
 
     if (str.empty()) {
@@ -15,32 +17,33 @@ std::chrono::system_clock::time_point parseTime(std::string str) {
     }
 
     tm.tm_year = std::stol(str.substr(0, 4)) - 1900;
-    tm.tm_mon = std::stol(str.substr(5, 2));
+    tm.tm_mon = std::stol(str.substr(5, 2)) - 1;
     tm.tm_mday = std::stol(str.substr(8, 2));
 
     tm.tm_hour = std::stol(str.substr(11, 2));
-    tm.tm_min = std::stol(str.substr(13, 2));
-    tm.tm_sec = std::stol(str.substr(16, 2));
+    tm.tm_min = std::stol(str.substr(14, 2));
+    tm.tm_sec = std::stol(str.substr(17, 2));
 
     auto time = std::mktime(&tm);
 
-    return std::chrono::system_clock::from_time_t(time);
+    return ClockT::from_time_t(time);
 }
 
-std::tm getTmFromTimepoint(std::chrono::system_clock::time_point tp) {
-    auto tt = std::chrono::system_clock::to_time_t(tp);
+std::tm timepointToTm(ClockT::time_point tp) {
+    auto tt = ClockT::to_time_t(tp);
 
     return *std::localtime(&tt);
 }
 
 struct MetaData {
+
     std::map<std::string, std::string> values;
 
     filesystem::path metaPath;
     filesystem::path imgPath;
     filesystem::path thumbPath;
 
-    std::chrono::system_clock::time_point time;
+    ClockT::time_point time;
 
     std::pair<std::string, std::string> parse(std::string line) {
         auto f = line.find('=');
@@ -95,6 +98,7 @@ struct MetaData {
         json["img"] = imgPath.string();
         json["thumb"] = thumbPath.string();
         json["metaPath"] = metaPath.string();
+        json["time"] = std::to_string(ClockT::to_time_t(time));
 
         auto &meta = json["meta"];
 
@@ -120,13 +124,15 @@ struct MetaData {
         imgPath = json["img"].value;
         thumbPath = json["thumb"].value;
 
+        time = ClockT::from_time_t(std::stoul(json["time"].value));
+
         for (const auto &it : meta) {
             values[it.name] = it.value;
         }
     }
 
     std::string dateString() const {
-        auto tt = std::chrono::system_clock::to_time_t(time);
+        auto tt = ClockT::to_time_t(time);
         return std::ctime(&tt);
     }
 };

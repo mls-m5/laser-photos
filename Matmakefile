@@ -1,17 +1,19 @@
 # Matmake file
 # https://github.com/mls-m5/matmake
 
-cpp = clang++-11
+#cpp = clang++-11
 
 cppflags +=                 # c++ only flags
 cflags +=                   # c only flags
 
-config += modules
+#config += modules
 
 config += c++17 Wall
 debug: config += debug      # Flags only used in "debug" confinguration
 
 debug: flags += -O0
+
+dir = bin
 
 includes +=
     include
@@ -20,13 +22,26 @@ includes +=
     lib/json.h/include
     src/
 
-main.src =
-    src/*.cpp
-    src/*.cppm
+fmt.src =
     lib/fmt/src/*.cc
+fmt.out = static fmt
 
-dir = bin
+#=== Main ========================================
 
+main.src =
+    src/main.cpp
+
+main.out = main
+
+main.link += fmt
+
+#=== Server ===================================
+
+server.config += threads
+server.src =
+    src/server.cpp
+server.out = server
+server.link = fmt
 
 #==============================================
 

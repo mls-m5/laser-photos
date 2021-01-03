@@ -19,6 +19,7 @@ public:
 
     void indent(std::ostream &stream, size_t level) const {
         for (auto i : msl::range(level)) {
+            (void)i;
             stream << "  ";
         }
     }
