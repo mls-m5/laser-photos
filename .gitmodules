@@ -7,6 +7,9 @@
 [submodule "lib/json.h"]
 	path = lib/json.h
 	url = https://github.com/mls-m5/json.h
+[submodule "lib/http-server"]
+	path = lib/http-server
+	url = https://github.com/mls-m5/http-server
 [submodule "test/mls-unit-test"]
 	path = test/mls-unit-test
 	url = https://github.com/mls-m5/mls-unit-test

@@ -20,6 +20,7 @@ includes +=
     lib/msl/include
     lib/fmt/include
     lib/json.h/include
+    lib/http-server/include
     src/
 
 fmt.src =

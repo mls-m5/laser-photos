@@ -2,6 +2,7 @@
 
 #include "files/filesystem.h"
 #include "generate.h"
+#include "http/httpserver.h"
 #include <array>
 #include <fmt/core.h>
 #include <fstream>
@@ -11,8 +12,6 @@
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include "http/httpserver.h"
 
 namespace {
 
