@@ -30,11 +30,9 @@ size_t fileLen(filesystem::path path) {
 void sendFile(asio::ip::tcp::socket &socket, filesystem::path path) {
 
     auto fullPath = filesystem::absolute(filesystem::current_path()) / path;
-    //    auto fullPath = "bajs" / path;
 
     auto file = std::ifstream{fullPath, std::ios::binary};
     if (file.is_open()) {
-
         auto data = std::array<char, 100000>{};
 
         while (auto count = file.readsome(data.data(), data.size())) {
@@ -42,6 +40,7 @@ void sendFile(asio::ip::tcp::socket &socket, filesystem::path path) {
         }
     }
     else {
+        fmt::print("could not load {}\n" + path.string());
         socket.write_some(
             asio::buffer("could not load " + path.string() + "\n"));
     }
@@ -82,7 +81,19 @@ void sendHtml(asio::ip::tcp::socket &socket, filesystem::path path) {
 
     socket.write_some(asio::buffer(httpHeader));
 
-    sendFile(socket, path);
+    sendFile(socket, "../html" / path);
+}
+
+void sendCode(asio::ip::tcp::socket &socket, filesystem::path path) {
+    constexpr auto httpHeader =
+        std::string_view{"HTTP/1.1 200 OK\r\n"
+                         "Content-Type: application/wasm\r\n"
+                         //"Content-Type: application/octet-stream\r\n"
+                         "\r\n"};
+
+    socket.write_some(asio::buffer(httpHeader));
+
+    sendFile(socket, "../bin/html" / path);
 }
 
 void sendImg(asio::ip::tcp::socket &socket, filesystem::path path) {
@@ -123,6 +134,21 @@ int main(int argc, char *argv[]) {
     server.addFilter(
         [](auto &&header) { return isImage(header.location); },
         [](auto &&socket, auto &&header) { sendImg(socket, header.location); });
+
+    server.addFilter(
+        [](auto &&header) { return header.location.extension() == ".html"; },
+        [](auto &&socket, auto &&header) {
+            sendHtml(socket, header.location);
+        });
+
+    server.addFilter(
+        [](auto &&header) {
+            return header.location.extension() == ".wasm" ||
+                   header.location.extension() == ".js";
+        },
+        [](auto &&socket, auto &&header) {
+            sendCode(socket, header.location);
+        });
 
     server.defaultAction([](auto &&socket, const HttpHeader &header) {
         sendFileNotFound(socket, header.location);

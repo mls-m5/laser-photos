@@ -45,24 +45,25 @@ inline void index() {
 
         auto thumbPath = filesystem::path{"thumbs"} / (hash + ".jpg");
 
-        // see
-        // https://www.cyberciti.biz/tips/howto-linux-creating-a-image-thumbnails-from-shell-prompt.html
-        bool failed =
-            system((std::string{"convert -auto-orient -thumbnail x200 '"} +
-                    it.path().string() + "' '" + thumbPath.string() + "'")
-                       .c_str());
+        if (!filesystem::exists(thumbPath)) {
 
-        if (failed) {
-            fmt::print("skipping {} because of thumb failed\n",
-                       it.path().string());
-            continue;
+            // see
+            // https://www.cyberciti.biz/tips/howto-linux-creating-a-image-thumbnails-from-shell-prompt.html
+            bool failed =
+                system((std::string{"convert -auto-orient -thumbnail x200 '"} +
+                        it.path().string() + "' '" + thumbPath.string() + "'")
+                           .c_str());
+
+            if (failed) {
+                fmt::print("skipping {} because of thumb failed\n",
+                           it.path().string());
+                continue;
+            }
         }
 
-        auto metaData = MetaData{stream,
-                                 it.path(),
-                                 filesystem::path{"data"} / (hash + ".json"),
-                                 thumbPath,
-                                 hash};
+        auto metaPath = filesystem::path{"data"} / (hash + ".json");
+
+        auto metaData = MetaData{stream, it.path(), metaPath, thumbPath, hash};
 
         auto time = metaData.time;
 

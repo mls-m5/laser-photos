@@ -44,7 +44,25 @@ server.src =
 server.out = server
 server.link = fmt
 
-#==============================================
+
+#============ Webapp ===========================
+
+webfmt.flags =  -s WASM=1
+webfmt.cpp = em++
+webfmt.ar = emar
+webfmt.dir = bin/html
+webfmt.out = static html
+webfmt.src +=
+    lib/fmt/src/*.cc
+
+web.flags =  -s WASM=1
+web.cpp = em++
+web.src = src/webpage.cpp
+web.link = webfmt
+web.dir = bin/html
+web.out = main.html
+
+#============ Test =============================
 
 src = test/%.cpp
 
@@ -52,5 +70,7 @@ includes += test
 
 date_test.out = test %
 date_test.link += fmt
+
+
 
 
