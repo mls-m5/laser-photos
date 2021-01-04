@@ -1,6 +1,7 @@
 #pragma once
 
 #include "files/filesystem.h"
+#include "fmt/chrono.h"
 #include "fmt/core.h"
 #include "json/json.h"
 #include <chrono>
@@ -42,6 +43,7 @@ struct MetaData {
     filesystem::path metaPath;
     filesystem::path imgPath;
     filesystem::path thumbPath;
+    std::string hash;
 
     ClockT::time_point time;
 
@@ -55,7 +57,9 @@ struct MetaData {
     MetaData(std::istream &stream,
              filesystem::path imgPath,
              filesystem::path metaPath,
-             filesystem::path thumb) {
+             filesystem::path thumb,
+             std::string hash)
+        : hash(hash) {
         for (std::string line; std::getline(stream, line);) {
             auto pair = parse(line);
             values[pair.first] = pair.second;
@@ -91,27 +95,6 @@ struct MetaData {
         return stream;
     }
 
-    void save() {
-        auto json = Json{};
-        json.type = Json::Object;
-
-        json["img"] = imgPath.string();
-        json["thumb"] = thumbPath.string();
-        json["metaPath"] = metaPath.string();
-        json["time"] = std::to_string(ClockT::to_time_t(time));
-
-        auto &meta = json["meta"];
-
-        meta.reserve(values.size());
-        meta.type = Json::Array;
-
-        for (const auto &it : values) {
-            meta[it.first] = it.second;
-        }
-
-        std::ofstream{metaPath} << json;
-    }
-
     void load(filesystem::path path) {
         auto json = Json{};
 
@@ -123,12 +106,37 @@ struct MetaData {
 
         imgPath = json["img"].value;
         thumbPath = json["thumb"].value;
+        hash = json["hash"].value;
 
         time = ClockT::from_time_t(std::stoul(json["time"].value));
 
         for (const auto &it : meta) {
             values[it.name] = it.value;
         }
+    }
+
+    void save() {
+        auto json = Json{};
+        json.type = Json::Object;
+
+        json["img"] = imgPath.string();
+        json["thumb"] = thumbPath.string();
+        json["metaPath"] = metaPath.string();
+        json["time"] = std::to_string(ClockT::to_time_t(time));
+        json["formattedTime"] =
+            fmt::format("{:%Y:%m:%d %H:%M:%S}", timepointToTm(time));
+        json["hash"] = hash;
+
+        auto &meta = json["meta"];
+
+        meta.reserve(values.size());
+        meta.type = Json::Array;
+
+        for (const auto &it : values) {
+            meta[it.first] = it.second;
+        }
+
+        std::ofstream{metaPath} << json;
     }
 
     std::string dateString() const {

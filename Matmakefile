@@ -50,5 +50,6 @@ src = test/%.cpp
 includes += test
 
 date_test.out = test %
+date_test.link += fmt
 
 
