@@ -1,3 +1,5 @@
+// Copyright Mattias Larsson SKöld 2020
+
 #pragma once
 
 #include "files/filesystem.h"
@@ -5,6 +7,7 @@
 #include "image/metadata.h"
 #include <iostream>
 
+//! Generate the index html page
 void generate(std::ostream &stream) {
     auto dataDir = "data";
 

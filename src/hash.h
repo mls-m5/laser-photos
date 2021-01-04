@@ -1,3 +1,5 @@
+// Copyright Mattias Larsson SKöld 2020
+
 #pragma once
 
 #include "msl/range.h"
@@ -18,6 +20,8 @@ public:
         }
     }
 
+    //! This hash alghorithm probably sucks. I have not googled it, i have just
+    //! heard that xor could be used fore someothing :P
     std::string_view hash() {
         for (auto i : msl::range(data.size())) {
             strData[i * 2] = ((data[i] & 0xf0) >> 4) + 'a';

@@ -1,3 +1,5 @@
+// Copyright Mattias Larsson SKöld 2020
+
 #pragma once
 
 #include "fmt/core.h"
@@ -89,8 +91,8 @@ public:
 
     std::string tag = "html";
 
-    std::vector<Html> _children;
     std::vector<std::pair<std::string, std::string>> _attributes;
+    std::vector<Html> _children;
     std::string _content;
     bool _isEmptyType;
 

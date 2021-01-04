@@ -1,3 +1,4 @@
+// Copyright Mattias Larsson SKöld 2020
 
 #include "generate.h"
 #include "index.h"

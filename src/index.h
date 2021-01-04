@@ -1,3 +1,4 @@
+// Copyright Mattias Larsson SKöld 2020
 #pragma once
 
 #include "files/filesystem.h"

@@ -1,3 +1,5 @@
+// Copyright Mattias Larsson SKöld 2020
+
 #pragma once
 
 #include <cstdio>
@@ -5,6 +7,7 @@
 #include <iostream>
 #include <vector>
 
+//! Open a new process and read the output of that process as a stream
 class POpenStream : public std::istream {
 private:
     struct POpenStreamBuf : public std::streambuf {
@@ -43,8 +46,6 @@ private:
             }
         }
 
-        //        static constexpr size_t size = 1024;
-        //        std::array<char, size> buffer;
         std::vector<char> buffer;
 
         FILE *pfile;
