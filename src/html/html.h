@@ -10,11 +10,28 @@
 class Html {
 public:
     Html(std::string tag = "html",
+         std::vector<std::pair<std::string, std::string>> attributes = {},
          std::vector<Html> children = {},
-         std::vector<std::pair<std::string, std::string>> attributes = {})
+         std::string content = {})
         : tag(tag)
-        , _children(std::move(children))
         , _attributes(attributes)
+        , _children(std::move(children))
+        , _content(content)
+        , _isEmptyType(isEmptyType(tag)) {}
+
+    struct Args {
+        std::string tag = "html";
+        std::vector<std::pair<std::string, std::string>> attributes = {};
+        std::vector<Html> children = {};
+        std::string content = {};
+    };
+
+    //! Constructor but with "named argumnets"
+    Html(Args args)
+        : tag(args.tag)
+        , _attributes(std::move(args.attributes))
+        , _children(std::move(args.children))
+        , _content(std::move(args.content))
         , _isEmptyType(isEmptyType(tag)) {}
 
     void indent(std::ostream &stream, size_t level) const {
@@ -33,7 +50,6 @@ public:
         }
 
         if (_isEmptyType) {
-
             fmt::print(stream, "/>\n");
         }
         else {

@@ -36,6 +36,11 @@ std::tm timepointToTm(ClockT::time_point tp) {
     return *std::localtime(&tt);
 }
 
+//! Some standard way to format data to
+std::string formatDate(ClockT::time_point tp) {
+    return fmt::format("{:%Y:%m:%d %H:%M:%S}", timepointToTm(tp));
+}
+
 struct MetaData {
 
     std::map<std::string, std::string> values;
@@ -123,8 +128,8 @@ struct MetaData {
         json["thumb"] = thumbPath.string();
         json["metaPath"] = metaPath.string();
         json["time"] = std::to_string(ClockT::to_time_t(time));
-        json["formattedTime"] =
-            fmt::format("{:%Y:%m:%d %H:%M:%S}", timepointToTm(time));
+        json["formattedTime"] = formatDate(time);
+        //            fmt::format("{:%Y:%m:%d %H:%M:%S}", timepointToTm(time));
         json["hash"] = hash;
 
         auto &meta = json["meta"];
@@ -140,7 +145,10 @@ struct MetaData {
     }
 
     std::string dateString() const {
-        auto tt = ClockT::to_time_t(time);
-        return std::ctime(&tt);
+        return formatDate(time); // This leads to a segmentation error
+        //        in some cases
+        //        return fmt::format("{:%Y:%m:%d %H:%M:%S}",
+        //        timepointToTm(time)); auto tt = ClockT::to_time_t(time);
+        //        return std::ctime(&tt);
     }
 };

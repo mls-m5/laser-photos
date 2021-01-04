@@ -1,5 +1,6 @@
 
 #include "files/filesystem.h"
+#include "generate.h"
 #include <array>
 #include <asio/io_service.hpp>
 #include <asio/ip/tcp.hpp>
@@ -75,10 +76,6 @@ void sendFile(asio::ip::tcp::socket &socket, filesystem::path path) {
         while (auto count = file.readsome(data.data(), data.size())) {
             socket.write_some(asio::buffer(data.data(), count));
         }
-
-        //        for (std::string line; std::getline(file, line);) {
-        //            socket.write_some(asio::buffer(line));
-        //        }
     }
     else {
         socket.write_some(
@@ -94,6 +91,22 @@ void sendFileNotFound(asio::ip::tcp::socket &socket, filesystem::path path) {
                      "\r\n");
 
     socket.write_some(httpHeader);
+}
+
+void sendIndexFile(asio::ip::tcp::socket &socket) {
+    constexpr auto httpHeader =
+        std::string_view{"HTTP/1.1 200 OK\r\n"
+                         "Content-Type: text/html; charset=\"UTF-8\"\r\n"
+                         "Connection: Keep-Alive\r\n"
+                         "\r\n"};
+
+    std::ostringstream ss;
+
+    ss << httpHeader;
+
+    generate(ss);
+
+    socket.write_some(asio::buffer(ss.str()));
 }
 
 void sendHtml(asio::ip::tcp::socket &socket, filesystem::path path) {
@@ -119,6 +132,19 @@ void sendImg(asio::ip::tcp::socket &socket, filesystem::path path) {
     socket.write_some(asio::buffer(httpHeader));
 
     sendFile(socket, path);
+}
+
+bool isImage(filesystem::path path) {
+    auto ext = path.extension();
+
+    if (ext == "jpg" || ext == "jpeg") {
+        return true;
+    }
+    else if (ext == "png") {
+        return true;
+    }
+
+    return false;
 }
 
 class HttpServer {
@@ -151,9 +177,9 @@ public:
                               << std::endl;
 
                     if (header.location == "./") {
-                        sendHtml(socket, "index.html");
+                        sendIndexFile(socket);
                     }
-                    else if (header.location.extension() == ".jpg") {
+                    else if (isImage(header.location)) {
                         sendImg(socket, header.location);
                     }
                     else {

@@ -1,155 +1,8 @@
 
-#include "files/filesystem.h"
-#include "files/popenstream.h"
-#include "fmt/core.h"
-#include "hash.h"
-#include "html/html.h"
-#include "image/metadata.h"
-#include "jpeglib.h"
+#include "generate.h"
+#include "index.h"
 
 namespace {
-
-void index() {
-    auto root = filesystem::current_path();
-
-    //    auto inputDir = root / "input";
-    auto inputDir = filesystem::path{"input"};
-
-    for (const auto &it : filesystem::recursive_directory_iterator(inputDir)) {
-        if (filesystem::is_directory(it.path())) {
-            continue;
-        }
-
-        auto ext = it.path().extension();
-        if (ext != ".jpg" && ext != ".jpeg") {
-            fmt::print("skipping non-image {}\n", it.path().string());
-            continue;
-        }
-
-        std::cout << it.path() << " -> ";
-
-        auto file = std::ifstream{it.path()};
-
-        auto hash = ::hash(file);
-
-        std::cout << hash << "\n";
-
-        std::cout.flush();
-
-        POpenStream stream{"identify -format '%[EXIF:*]' '" +
-                           it.path().string() + "'"};
-
-        if (stream.returnCode()) {
-            fmt::print("skipping {}\n", it.path().string());
-            continue;
-        }
-
-        auto thumbPath = filesystem::path{"thumbs"} / (hash + ".jpg");
-
-        // see
-        // https://www.cyberciti.biz/tips/howto-linux-creating-a-image-thumbnails-from-shell-prompt.html
-        bool failed =
-            system((std::string{"convert -auto-orient -thumbnail x200 '"} +
-                    it.path().string() + "' '" + thumbPath.string() + "'")
-                       .c_str());
-
-        if (failed) {
-            fmt::print("skipping {} because of thumb failed\n",
-                       it.path().string());
-            continue;
-        }
-
-        auto metaData = MetaData{stream,
-                                 it.path(),
-                                 filesystem::path{"data"} / (hash + ".json"),
-                                 thumbPath,
-                                 hash};
-
-        auto time = metaData.time;
-
-        auto tm = timepointToTm(time);
-
-        auto dir = filesystem::path{"data"} /
-                   std::to_string(tm.tm_year + 1900) /
-                   std::to_string(tm.tm_mon + 1) / std::to_string(tm.tm_mday);
-
-        filesystem::create_directories(dir);
-
-        auto newName = dir / it.path().filename();
-
-        filesystem::copy(
-            it.path(), newName, filesystem::copy_options::skip_existing);
-
-        metaData.imgPath = newName;
-
-        metaData.save();
-    }
-}
-
-filesystem::path generate() {
-    //    auto root = filesystem::current_path();
-    //    auto dataDir = root / "data";
-    auto dataDir = "data";
-
-    std::vector<MetaData> metaData;
-
-    metaData.reserve(10000);
-
-    for (const auto &it : filesystem::recursive_directory_iterator{dataDir}) {
-        if (it.path().extension() != ".json") {
-            continue;
-        }
-
-        metaData.emplace_back(it.path());
-    }
-
-    auto images = Html{"div"};
-
-    images.children().reserve(metaData.size());
-
-    for (const auto &meta : metaData) {
-        fmt::print("{}\n", meta.imgPath.string());
-
-        images.children().push_back({
-            "a",
-            {{"img",
-              {},
-              {
-                  {"src", meta.thumbPath},
-                  {"title", meta.dateString()},
-              }}},
-            {{"href", meta.imgPath.string()}},
-        });
-    }
-
-    auto html = Html{
-        "html",
-        {
-            {
-                "head",
-                {
-                    {"meta", {}, {{"charset", "utf-8"}}},
-                },
-            },
-            images,
-        },
-    };
-
-    html.print(std::cout);
-
-    auto filename = filesystem::path{"index.html"};
-
-    std::ofstream file{filename};
-
-    if (!file.is_open()) {
-        throw std::runtime_error{"could not open output file " +
-                                 filesystem::absolute(filename).string()};
-    }
-
-    html.print(file);
-
-    return filename;
-}
 
 const std::string helpString = R"_(
 index              index the image folder
@@ -157,6 +10,7 @@ generate           generate
 
 )_";
 
+//! Settings loaded from command line arguments
 struct Settings {
     bool shouldIndex = false;
     bool shouldGenerate = false;
@@ -195,7 +49,14 @@ int main(int argc, char **argv) {
     }
 
     if (settings.shouldGenerate) {
-        generate();
+        auto filename = filesystem::path{"index.html"};
+        std::ofstream file{filename};
+        if (!file.is_open()) {
+            throw std::runtime_error{"could not open output file " +
+                                     filesystem::absolute(filename).string()};
+        }
+
+        generate(file);
     }
 
     return 0;
