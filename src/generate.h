@@ -3,8 +3,10 @@
 #pragma once
 
 #include "files/filesystem.h"
+#include "html/css.h"
 #include "html/html.h"
 #include "image/metadata.h"
+#include "json/json.h"
 #include <iostream>
 
 //! Generate the index html page
@@ -36,10 +38,24 @@ void generate(std::ostream &stream) {
             {{"img",
               {
                   {"src", meta.thumbPath},
+                  {"loading", "lazy"},
                   {"title", meta.dateString()},
               }}},
         });
     }
+
+    auto style = std::ostringstream{};
+
+    style << CssSheet{
+        CssRule{
+            .name = "img",
+            .attributes =
+                {
+                    {"height", "100px"},
+                    {"width", "100px"},
+                },
+        },
+    };
 
     auto html = Html{
         "html",
